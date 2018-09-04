@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1531850165098.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "3699E40E",
+    "lastKnownWriteTime" : 1513202256,
+    "last_content_update" : 1513202256,
+    "path" : "C:/Users/SLAB/Desktop/Holden_Thermal/R/batch_roi_met.R",
+    "project_path" : "R/batch_roi_met.R",
+    "properties" : {
+        "cursorPosition" : "16,33",
+        "scrollLine" : "12"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

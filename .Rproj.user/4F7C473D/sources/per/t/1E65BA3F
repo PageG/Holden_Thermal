@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1532537388040.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "146571715",
+    "id" : "1E65BA3F",
+    "lastKnownWriteTime" : 1532544350,
+    "last_content_update" : 1532544350929,
+    "path" : "C:/R/Holden_Thermal/Rmd/process_thermal_images.Rmd",
+    "project_path" : "Rmd/process_thermal_images.Rmd",
+    "properties" : {
+        "cursorPosition" : "113,0",
+        "last_setup_crc32" : "4AE6DB247d4067cf",
+        "scrollLine" : "92"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

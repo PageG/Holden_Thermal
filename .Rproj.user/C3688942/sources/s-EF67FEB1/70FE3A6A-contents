@@ -1,0 +1,136 @@
+# Function to process all images in a directory for a given day
+
+correct_tir <- function (date, export_files = T){
+  
+  # load packages
+  library(Thermimage)
+  library(tidyverse)
+  
+  # load modified 'readflirJPG' function from Thermimage
+  source('./R/readflirJPG2.R')
+  
+  # read in micromet data for correction
+  met <- read.csv(paste('./data/greenhouse_bench/FLIR_', date, '/met/met_', date,'.csv', sep = ""))
+  met$Time <- strptime(paste(as.Date(met$DOY-1, origin = "2018-01-01"), met$Time, sep = " "), format = '%Y-%m-%d %H%M')
+  
+  # read in images
+  files <- dir(paste('./data/greenhouse_bench/FLIR_', date, '/', sep = ""), pattern = '*.jpg', full.names = T)
+  
+  img <- list()
+  for (i in 1:length(files)){
+    img[[i]] <- readflirJPG2(files[i], exiftoolpath="installed")
+  }
+  print('Images imported')
+  
+  cams <- list()
+  dateOriginal <- NULL; PlanckR1 <- NULL; PlanckB <- NULL; PlanckF<- NULL; PlanckO <- NULL; PlanckR2 <- NULL
+  
+  for (i in 1:length(files)){
+    tmp <- flirsettings(files[i], exiftoolpath="installed", camvals="")
+    dateOriginal[i] <- tmp$Dates$DateTimeOriginal             # Original date/time extracted from file
+    PlanckR1[i] <-    tmp$Info$PlanckR1                      # Planck R1 constant for camera  
+    PlanckB[i] <-     tmp$Info$PlanckB                       # Planck B constant for camera  
+    PlanckF[i] <-     tmp$Info$PlanckF                       # Planck F constant for camera
+    PlanckO[i] <-     tmp$Info$PlanckO                       # Planck O constant for camera
+    PlanckR2[i] <-    tmp$Info$PlanckR2                      # Planck R2 constant for camera
+    
+  }
+  print('Parameters extracted')
+  
+  img_times <- strptime(dateOriginal, format = '%Y-%m-%d %H:%M')
+  
+  img_met <- subset(met, met$Time %in% img_times)
+  
+  # now use met data for each image to correct the temperature data
+  sbc = 5.6703e-8 # Stefan-Boltzmann constant
+  
+  ### original rw2temp code from github demo
+  
+  cams <- flirsettings(files[1], exiftoolpath="installed", camvals="")
+  
+  ObjectEmissivity_1 <-  cams$Info$Emissivity              # Image Saved Emissivity - should be ~0.95 or 0.96
+  dateOriginal_1 <- cams$Dates$DateTimeOriginal             # Original date/time extracted from file
+  dateModif_1 <-  cams$Dates$FileModificationDateTime     # Modification date/time extracted from file
+  PlanckR1_1 <-   cams$Info$PlanckR1                      # Planck R1 constant for camera  
+  PlanckB_1 <-    cams$Info$PlanckB                       # Planck B constant for camera  
+  PlanckF_1 <-    cams$Info$PlanckF                       # Planck F constant for camera
+  PlanckO_1 <-    cams$Info$PlanckO                       # Planck O constant for camera
+  PlanckR2_1 <-   cams$Info$PlanckR2                      # Planck R2 constant for camera
+  OD_1 <-         cams$Info$ObjectDistance                # object distance in metres
+  FD_1 <-         cams$Info$FocusDistance                 # focus distance in metres
+  ReflT_1 <-      cams$Info$ReflectedApparentTemperature  # Reflected apparent temperature
+  AtmosT_1 <-     cams$Info$AtmosphericTemperature        # Atmospheric temperature
+  IRWinT_1 <-     cams$Info$IRWindowTemperature           # IR Window Temperature
+  IRWinTran_1 <-  cams$Info$IRWindowTransmission          # IR Window transparency
+  RH_1 <-         cams$Info$RelativeHumidity              # Relative Humidity
+  h_1 <-          cams$Info$RawThermalImageHeight         # sensor height (i.e. image height)
+  w_1 <-          cams$Info$RawThermalImageWidth          # sensor width (i.e. image width)
+  
+  
+  
+  # temperature<-raw2temp(img, ObjectEmissivity, OD, ReflT, AtmosT, IRWinT, IRWinTran, RH,
+  # PlanckR1, PlanckB, PlanckF, PlanckO, PlanckR2)
+  
+  temperature_corr <- list()
+  temperature_uncorr <- list()
+  
+  for (i in 1:length(img)){
+    temperature_corr[[i]] <- raw2temp(img[[i]], E = 0.97, OD = 1.2, RTemp = (img_met$CG3upCO_Wm2[i]/sbc)^(1/4)-273.15,
+                                 img_met$AirT_K[i],img_met$AirT_K[i], 1, img_met$RH[i],
+                                 PlanckR1[i], PlanckB[i], PlanckF[i], PlanckO[i], PlanckR2[i])
+  }
+
+  for (i in 1:length(img)){
+    temperature_uncorr[[i]] <- raw2temp(img[[i]], ObjectEmissivity_1, OD_1, ReflT_1, AtmosT_1, IRWinT_1, IRWinTran_1, RH_1,
+                                 PlanckR1_1, PlanckB_1, PlanckF_1, PlanckO_1, PlanckR2_1)
+  }
+  print('finished processing')
+  
+  # export data into csv's
+  # files <- dir('./data/051418/FLIR/', pattern = '*.jpg', full.names = F)
+  files <- tools::file_path_sans_ext(files)
+  
+  if (export_files == T){
+  
+    for (i in 1:length(temperature_corr)){
+      # write.csv(temperature[[i]], file = paste(files[i], '_corr.csv', sep = ""), row.names = F, col.names = F)
+      write.table(temperature_corr[[i]], file = paste(files[i], '_corr.csv', sep = ""), sep=",",  row.names = F, col.names = F)
+    }
+    
+    for (i in 1:length(temperature_uncorr)){
+      # write.csv(temperature[[i]], file = paste(files[i], '_corr.csv', sep = ""), row.names = F, col.names = F)
+      write.table(temperature_uncorr[[i]], file = paste(files[i], '_uncorr.csv', sep = ""), sep=",",  row.names = F, col.names = F)
+    }
+    
+    print('done - files exported')
+  } else{
+      print('done - files not exported')
+  }
+  
+ temperature <- list(temperature_uncorr, temperature_corr)
+  
+ return(temperature)   
+
+}
+  
+  # write.table(img_met, file = 'img_met_031518.csv', sep = ",", row.names = F)
+  # 
+  # ## plots for fun
+  # i = 2
+  # plotTherm(temperature_uncorr[[i]], w=640, h=480, minrangeset = min(temperature_uncorr[[i]]), maxrangeset = max(temperature_uncorr[[i]]), trans="rotate270.matrix")
+  # 
+  # plot(met$AirT_K, type = 'l')
+  # points(which(met$Time %in% img_times), met$AirT_K[which(met$Time %in% img_times)])
+  # 
+  # plot(met$RH, type = 'l')
+  # points(which(met$Time %in% img_times), met$RH[which(met$Time %in% img_times)])
+  # 
+  # 
+  # plot(met$CG3DnCO_Wm2, type = 'l')
+  # points(which(met$Time %in% img_times), met$CG3DnCO_Wm2[which(met$Time %in% img_times)])
+  # 
+  # plot(met$CM3up, type = 'l')
+  # points(which(met$Time %in% img_times), met$CM3up[which(met$Time %in% img_times)])
+  # 
+  # plot(met$CM3dn, type = 'l')
+  # points(which(met$Time %in% img_times), met$CM3dn[which(met$Time %in% img_times)])

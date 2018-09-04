@@ -1,0 +1,296 @@
+## Read in TIR images from FLIR format [save to .RDA]
+# combine capture time with image info
+# select ROI, then save as CSV.
+
+
+require(Thermimage)
+require(devtools)
+devtools::install_github("griffithdan/thermocamTools")
+require(thermocamTools)
+
+
+files <- dir('D:/YKIM_DATA/2_TIR research and data_Metolius site/1_Collect_raw data 5-min_TIR image/150422', full.names = T)
+
+head(files)
+
+
+img <- readThermocamRaw(files[1])
+plot(img)
+
+
+# Example file names - no clear naming convection in the raw files? Youngil applied better names when converting to .csv, but don't know how.
+# MMPF-112_23_00_16_904 (2017_10_09 18_27_42 UTC).seq
+# MMPF-309_21_30_04_130 (2017_10_09 18_27_42 UTC).seq
+
+
+stuff <- lapply(files, flirsettings)
+
+stuff[[1672]]$Dates$DateTimeOriginal
+
+img_time <- rep(NA, length(stuff))
+for (i in 1:length(img_time)){
+  img_time[i] <- stuff[[i]]$Dates$DateTimeOriginal
+  
+}
+head(img_time)
+
+### Metolius data are already processed to cSV - need to extract ROI's for all
+
+x <- read.csv('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2014/Temp_csv_14_2/MMPF14149157.csv', header = F)
+x1 <- as.matrix(x)
+image(x1)
+filled.contour(x1)
+
+
+files <- dir('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2014/Temp_csv_14_2', full.names = T, pattern = '*.csv')
+
+head(files)
+
+roi1 <- NULL; roi2 <- NULL; roi3 <- NULL; roi4 <- NULL; roi5 <- NULL; roi6 <- NULL; roi7 <- NULL
+roi8 <- NULL; roi9 <- NULL; roi10 <- NULL; roi11 <- NULL; roi12 <- NULL
+
+system.time(
+for (i in 1:length(files)){
+  x <- read.csv(files[i], header = F)
+  x1 <- as.matrix(x)
+  roi1[i] <- mean(x1[179:213, 7:27])
+  roi2[i] <- mean(x1[208:223, 76:90])
+  roi3[i] <- mean(x1[166:190, 223:235])
+  roi4[i] <- mean(x1[133:153, 17:27])
+  roi5[i] <- mean(x1[130:151, 143:155])
+  roi6[i] <- mean(x1[121:139, 277:290])
+  roi7[i] <- mean(x1[80:96, 9:28])
+  roi8[i] <- mean(x1[81:101, 120:147])
+  roi9[i] <- mean(x1[83:100, 225:245])
+  roi10[i] <- mean(x1[25:42, 27:54])
+  roi11[i] <- mean(x1[28:47, 132:171])
+  roi12[i] <- mean(x1[28:45, 242:268])
+}
+)
+
+files <- dir('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2014/Temp_csv_14_2', pattern = '*.csv')
+head(files)
+
+DOY <- as.numeric(substr(files, 7, 9))
+Hour <- (as.numeric(substr(files[1:2], 10, 12))*5 - 5)
+
+temp <- as.numeric(substr(files, 10, 12))*5/60
+temp1 <- temp - floor(temp)
+temp2 <- paste(floor(temp), ':', temp1*60, sep = "")
+temp2[temp2 == "24:0"] <- "0:0"
+
+DOY1 <- as.Date(DOY-1, origin = "2014-01-01")
+
+final <- as.POSIXct(paste(DOY1, temp2, sep = " "), format = "%Y-%m-%d %H:%M")
+head(final)
+final[1:20] # looks great. Tomorrow will batch all the folders. Will take a couple of hours.
+
+tir_2014 <- NULL
+tir_2014[[1]] <-  data.frame(final, roi1, roi2, roi3, roi4, roi5, roi6, roi7, roi8, roi9, roi10, roi11, roi12)
+
+
+## Process all files from 2014----------------------------------------------------------------------------------------
+
+tir_2014 <- NULL
+
+fold <- dir('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2014')
+head(fold)
+
+system.time(
+for (j in 2:length(fold)){
+
+  files <- dir(paste('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2014/', fold[j], sep =""), full.names = T, pattern = '*.csv')
+
+  roi1 <- NULL; roi2 <- NULL; roi3 <- NULL; roi4 <- NULL; roi5 <- NULL; roi6 <- NULL; roi7 <- NULL
+  roi8 <- NULL; roi9 <- NULL; roi10 <- NULL; roi11 <- NULL; roi12 <- NULL
+
+
+  for (i in 1:length(files)){
+    x <- read.csv(files[i], header = F)
+    x1 <- as.matrix(x)
+    roi1[i] <- mean(x1[179:213, 7:27])
+    roi2[i] <- mean(x1[208:223, 76:90])
+    roi3[i] <- mean(x1[166:190, 223:235])
+    roi4[i] <- mean(x1[133:153, 17:27])
+    roi5[i] <- mean(x1[130:151, 143:155])
+    roi6[i] <- mean(x1[121:139, 277:290])
+    roi7[i] <- mean(x1[80:96, 9:28])
+    roi8[i] <- mean(x1[81:101, 120:147])
+    roi9[i] <- mean(x1[83:100, 225:245])
+    roi10[i] <- mean(x1[25:42, 27:54])
+    roi11[i] <- mean(x1[28:47, 132:171])
+    roi12[i] <- mean(x1[28:45, 242:268])
+  }
+
+  files <- dir(paste('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2014/', fold[j], sep =""), pattern = '*.csv')
+
+  DOY <- as.numeric(substr(files, 7, 9))
+  Hour <- (as.numeric(substr(files[1:2], 10, 12))*5 - 5)
+
+  temp <- ((as.numeric(substr(files, 10, 12))*5)-5)/60
+  temp1 <- temp - floor(temp)
+  temp2 <- paste(floor(temp), ':', temp1*60, sep = "")
+  temp2[temp2 == "24:0"] <- "0:0"
+
+  DOY1 <- as.Date(DOY-1, origin = "2014-01-01")
+
+  final <- as.POSIXct(paste(DOY1, temp2, sep = " "), format = "%Y-%m-%d %H:%M")
+
+  tir_2014[[j]] <-  data.frame(final, roi1, roi2, roi3, roi4, roi5, roi6, roi7, roi8, roi9, roi10, roi11, roi12)
+
+}
+)
+
+for (j in 2:length(fold)){
+  files <- dir(paste('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2014/', fold[j], sep =""), pattern = '*.csv')
+
+  DOY <- as.numeric(substr(files, 7, 9))
+  Hour <- (as.numeric(substr(files[1:2], 10, 12))*5 - 5)
+
+  temp <- ((as.numeric(substr(files, 10, 12))*5)-5)/60
+  temp1 <- temp - floor(temp)
+  temp2 <- paste(floor(temp), ':', temp1*60, sep = "")
+  temp2[temp2 == "24:0"] <- "0:0"
+
+  DOY1 <- as.Date(DOY-1, origin = "2014-01-01")
+
+  final <- as.POSIXct(paste(DOY1, temp2, sep = " "), format = "%Y-%m-%d %H:%M")
+
+  tir_2014[[j]]$final <-  final
+
+}
+
+all_2014 <- do.call(rbind, tir_2014)
+
+plot(all_2014$roi1, type = 'l')
+
+all_2014[all_2014 == 0] <- NA
+
+colnames(all_2014)[colnames(all_2014) == 'final'] <- 'DateTime'
+
+write.csv(x = all_2014, file = 'MMPF_2014_ROI_GP.csv', row.names = F)
+
+# ## -------------------------------------------------------------------------------------------
+# 
+# ## Process all files from 2015----------------------------------------------------------------------------------------
+# 
+# tir_2015 <- NULL
+# 
+# fold <- dir('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2015')
+# head(fold)
+# 
+# system.time(
+#   for (j in 1:length(fold)){
+#     
+#     files <- dir(paste('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2015/', fold[j], sep =""), full.names = T, pattern = '*.csv')
+#     
+#     roi1 <- NULL; roi2 <- NULL; roi3 <- NULL; roi4 <- NULL; roi5 <- NULL; roi6 <- NULL; roi7 <- NULL
+#     roi8 <- NULL; roi9 <- NULL; roi10 <- NULL; roi11 <- NULL; roi12 <- NULL
+#     
+#     
+#     for (i in 1:length(files)){
+#       x <- read.csv(files[i], header = F)
+#       x1 <- as.matrix(x)
+#       roi1[i] <- mean(x1[179:213, 7:27])
+#       roi2[i] <- mean(x1[208:223, 76:90])
+#       roi3[i] <- mean(x1[166:190, 223:235])
+#       roi4[i] <- mean(x1[133:153, 17:27])
+#       roi5[i] <- mean(x1[130:151, 143:155])
+#       roi6[i] <- mean(x1[121:139, 277:290])
+#       roi7[i] <- mean(x1[80:96, 9:28])
+#       roi8[i] <- mean(x1[81:101, 120:147])
+#       roi9[i] <- mean(x1[83:100, 225:245])
+#       roi10[i] <- mean(x1[25:42, 27:54])
+#       roi11[i] <- mean(x1[28:47, 132:171])
+#       roi12[i] <- mean(x1[28:45, 242:268])
+#     }
+#     
+#     files <- dir(paste('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2015/', fold[j], sep =""), pattern = '*.csv')
+#     
+#     DOY <- as.numeric(substr(files, 7, 9))
+#     Hour <- (as.numeric(substr(files[1:2], 10, 12))*5 - 5)
+#     
+#     temp <- ((as.numeric(substr(files, 10, 12))*5)-5)/60
+#     temp1 <- temp - floor(temp)
+#     temp2 <- paste(floor(temp), ':', temp1*60, sep = "")
+#     temp2[temp2 == "24:0"] <- "0:0"
+#     
+#     DOY1 <- as.Date(DOY-1, origin = "2015-01-01")
+#     
+#     DateTime <- as.POSIXct(paste(DOY1, temp2, sep = " "), format = "%Y-%m-%d %H:%M")
+#     
+#     tir_2015[[j]] <-  data.frame(DateTime, roi1, roi2, roi3, roi4, roi5, roi6, roi7, roi8, roi9, roi10, roi11, roi12)
+#     
+#   } 
+# )
+# 
+# all_2015 <- do.call(rbind, tir_2015)
+# 
+# plot(all_2015$roi1, type = 'l')
+# 
+# all_2015[all_2015 == 0] <- NA
+# 
+# write.csv(x = all_2015, file = 'MMPF_2015_ROI_GP.csv', row.names = F)
+
+## -------------------------------------------------------------------------------------------
+
+# View Thermal Images with ROI outlined
+
+
+x <- read.csv('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2014/Temp_csv_14_2/MMPF14149157.csv', header = F)
+
+x <- read.csv('D:/YKIM_DATA/2_TIR research and data_Metolius site/3_Complete_csv data for analysis_TIR image/Year_2014/Temp_csv_14_4/MMPF14255113.csv', header = F)
+
+
+x1 <- as.matrix(x)
+image(x1^2, col = rainbow(100))
+# filled.contour(x1)
+rect(179/240, 7/320, 213/240, 27/320)
+rect(208/240, 76/320, 223/240, 90/320)
+rect(166/240, 223/320, 190/240, 235/320)
+rect(133/240, 17/320, 153/240, 27/320)
+rect(130/240, 143/320, 151/240, 155/320)
+rect(121/240, 277/320, 139/240, 290/320)
+rect(80/240, 9/320, 96/240, 28/320)
+rect(81/240, 120/320, 101/240, 147/320)
+rect(83/240, 225/320, 100/240, 245/320)
+rect(25/240, 27/320, 42/240, 54/320)
+rect(28/240, 132/320, 47/240, 171/320)
+rect(28/240, 242/320, 45/240, 268/320)
+
+
+## Show position of ROI's--------------------------------------------------------
+x1 <- matrix(0, 240, 320)
+
+x1[179:213, 7:27] <- 1
+# x1[7:27, 179:213] <- 1
+x1[208:223, 76:90] <- 2
+x1[166:190, 223:235] <- 3
+x1[133:153, 17:27] <- 4
+x1[130:151, 143:155] <- 5
+x1[121:139, 277:290] <- 6
+x1[80:96, 9:28] <- 7
+x1[81:101, 120:147] <- 8
+x1[83:100, 225:245] <- 9
+x1[25:42, 27:54] <- 10
+x1[28:47, 132:171] <- 11
+x1[28:45, 242:268] <- 12
+
+filled.contour(x1)
+##-------------------------------------------------------------------------------
+
+# ## 2014 Metolius ROI's from Y.Kim 'tir_image_basicstat_entireday14_fulldoy_roiall_v3_1_leaf.pro'
+# # Define the X, Y range of all ROIs 
+# #lxs: starting pt of leaf X; lxe: ending pt of leaf X; lys: starting pt of leaf Y; lye: ending pt of leaf Y
+# lxs1 =   7  & lxe1  =  27 & lys1  = 179 & lye1  = 213 & lrows1  = 21 & lcols1  = 35 & lcell1  = 735; ROI1, L1
+# lxs2 =  76  & lxe2  =  90 & lys2  = 208 & lye2  = 223 & lrows2  = 15 & lcols2  = 16 & lcell2  = 240; ROI2, L2
+# lxs3 = 223  & lxe3  = 235 & lys3  = 166 & lye3  = 190 & lrows3  = 13 & lcols3  = 25 & lcell3  = 325; ROI3, L3
+# lxs4 =  17  & lxe4  =  27 & lys4  = 133 & lye4  = 153 & lrows4  = 11 & lcols4  = 21 & lcell4  = 231; ROI4, L4
+# lxs5 = 143  & lxe5  = 155 & lys5  = 130 & lye5  = 151 & lrows5  = 13 & lcols5  = 22 & lcell5  = 286; ROI5, L5
+# lxs6 = 277  & lxe6  = 290 & lys6  = 121 & lye6  = 139 & lrows6  = 14 & lcols6  = 19 & lcell6  = 266; ROI6, L6 (update from 277-290, 113-131 to 277-290, 121-139)
+# lxs7 =   9  & lxe7  =  28 & lys7  =  80 & lye7  =  96 & lrows7  = 20 & lcols7  = 17 & lcell7  = 340; ROI7, L7
+# lxs8 = 120  & lxe8  = 147 & lys8  =  81 & lye8  = 101 & lrows8  = 28 & lcols8  = 21 & lcell8  = 588; ROI8, L8
+# lxs9 = 225  & lxe9  = 245 & lys9  =  83 & lye9  = 100 & lrows9  = 21 & lcols9  = 18 & lcell9  = 378; ROI9, L9
+# lxs10 =  27 & lxe10 =  54 & lys10 =  25 & lye10 =  42 & lrows10 = 28 & lcols10 = 18 & lcell10 = 504; ROI10, L10
+# lxs11 = 132 & lxe11 = 171 & lys11 =  28 & lye11 =  47 & lrows11 = 40 & lcols11 = 20 & lcell11 = 800; ROI11, L11
+# lxs12 = 242 & lxe12 = 268 & lys12 =  28 & lye12 =  45 & lrows12 = 27 & lcols12 = 18 & lcell12 = 486; ROI12, L12

@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1531890040122.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "2DE61D7A",
+    "lastKnownWriteTime" : 30399714103722098,
+    "last_content_update" : 1531890040122,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "context" : "package:leafeb:::rh2ea"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_code_browser"
+}

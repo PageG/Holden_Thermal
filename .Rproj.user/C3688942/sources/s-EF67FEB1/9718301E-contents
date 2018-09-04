@@ -1,0 +1,20 @@
+
+source('./R/correct_tir.R')
+
+temperature <- correct_tir(date = '031518', export = T)
+temperature <- correct_tir(date = '033018', export = T)
+temperature <- correct_tir(date = '042618', export = T)
+temperature <- correct_tir(date = '051118', export = T)
+temperature <- correct_tir(date = '060518', export = T)
+temperature <- correct_tir(date = '061918', export = T)
+
+
+temp_uncorr <- lapply(temperature[[1]], mean)
+temp_uncorr <- unlist(temp_uncorr)
+
+temp_corr <- unlist(lapply(temperature[[2]], mean))
+
+err <- temp_uncorr - temp_corr
+
+plot(temp_corr ~ temp_uncorr)
+plot(err) # corrected temperatures are 0.25 - 0.45 degrees cooler

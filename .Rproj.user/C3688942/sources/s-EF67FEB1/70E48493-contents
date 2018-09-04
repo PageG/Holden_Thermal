@@ -1,0 +1,119 @@
+---
+title: "Phys Fest II Thermal Data"
+author: "Gerald Page"
+date: "July 17, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# load packages
+  library(Thermimage)
+  library(tidyverse)
+  library(fields)
+  # require(devtools)
+  # devtools::install_github("griffithdan/thermocamTools")
+  # require(thermocamTools)
+
+```
+
+### This R-Markdown document is a demonstration of loading, correcting, extracting and analysing thermal images collected at Holden Arboretum
+
+
+```{r, echo = F}
+# read in micromet data for correction
+met <- read.csv('../data/micromet/Tower_top_071818_interim.csv')
+
+# calculate RH from Vapor Pressure
+met$es <- 0.6108 * exp(17.27 * met$Ta_C/(met$Ta_C + 237.3)) # saturation vapor pressure
+met$RH <- (met$VapP_kPa / met$es) * 100 # ea <- rh/100 * es
+
+# format 'DateTime'
+met$DateTime <- as.POSIXct(met$DateTime, format = '%m/%d/%Y %H:%M')
+
+# interpolate Met data to 1 minute intervals
+new_times <- seq(min(met$DateTime), max(met$DateTime), 60)
+new_data <- data.frame(new_times, NA, NA)
+names(new_data) <- c('DateTime', 'Ta', 'RH')
+
+new_data$Ta <- spline(met$DateTime, met$Ta_C, xout = new_data$DateTime)$y
+new_data$RH <- spline(met$DateTime, met$RH, xout = new_data$DateTime)$y
+
+
+# read in TIR images
+files <- dir('../data/images/', full.names = T)
+img <- list()
+
+# to save time with this demonstration, I'm only opening every 6th image
+saver <- seq(1, 276, 6)
+
+for (i in 1:46){
+    img[[i]] <- readflirJPG(files[saver[i]], exiftoolpath="installed")
+}; print('Images imported')
+
+  
+cams <- list()
+dateOriginal <- NULL; PlanckR1 <- NULL; PlanckB <- NULL;
+PlanckF<- NULL; PlanckO <- NULL; PlanckR2 <- NULL
+ReflT <- NULL; AtmosT <- NULL
+  
+for (i in 1:46){
+  tmp <- flirsettings(files[saver[i]], exiftoolpath="installed", camvals="")
+  dateOriginal[i] <- tmp$Dates$DateTimeOriginal   # Original date/time extracted from file
+  PlanckR1[i] <-    tmp$Info$PlanckR1         # Planck R1 constant for camera  
+  PlanckB[i] <-     tmp$Info$PlanckB          # Planck B constant for camera  
+  PlanckF[i] <-     tmp$Info$PlanckF          # Planck F constant for camera
+  PlanckO[i] <-     tmp$Info$PlanckO          # Planck O constant for camera
+  PlanckR2[i] <-    tmp$Info$PlanckR2         # Planck R2 constant for camera
+  ReflT[i] <-       tmp$Info$ReflectedApparentTemperature  # Reflected apparent temperature
+  AtmosT[i] <-      tmp$Info$AtmosphericTemperature        # Atmospheric temperature
+}; print('Parameters extracted')
+
+# get dates and times from images and format
+img_times <- strptime(dateOriginal, format = '%Y-%m-%d %H:%M') # wrong timezone
+
+img_times <- img_times + 3*60*60 # add 3 hours to image times
+
+# subset met data to match image capture times
+img_met <- subset(new_data, new_data$DateTime %in% img_times)
+
+# now use met data for each image to correct the temperature data
+sbc = 5.6703e-8 # Stefan-Boltzmann constant
+
+```
+
+```{r, echo = F}
+
+
+temperature_corr <- list()
+  
+for (i in 1:length(img)){
+  temperature_corr[[i]] <- raw2temp(img[[i]], 
+            E = 0.97, OD = 1.2, 
+            RTemp = new_data$Ta[i],
+            20, new_data$Ta[1], 
+            1, 
+            RH = new_data$RH[i], PlanckR1[i], PlanckB[i], PlanckF[i], 
+            PlanckO[i], PlanckR2[i])
+}
+
+rotate <- function(x) t(apply(x, 2, rev))
+
+temperature_corr <- lapply(temperature_corr, rotate)
+
+# temperature<-raw2temp(img, ObjectEmissivity, OD, ReflT, AtmosT, IRWinT, IRWinTran, RH,
+#                       PlanckR1, PlanckB, PlanckF, PlanckO, PlanckR2)
+
+
+```
+
+
+```{r, echo = F}
+
+plotTherm(temperature_corr[[1]], h=240, w=320, minrangeset=min(temperature_corr[[1]]), maxrangeset=max(temperature_corr[[1]]))
+
+
+hist(temperature_corr[[1]])
+
+```
+

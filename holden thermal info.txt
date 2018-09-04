@@ -1,0 +1,22 @@
+## Naming convention: HA-DOY_HH_MM_SS_MS.seq
+
+HA-197_15_59_54_174 blurry
+
+HA-197_18_52_06_255 camera moved (lasts 2 frames in this position)
+
+HA-197_19_02_06_262 camera moved again
+
+HA-197_19_27_06_252 camera moves slightly
+
+HA-198_15_17_06_262 camera moves (7/17/18 15:17)
+
+HA-198_15_37_06_260 image fault
+
+HA-198_15_42_06_262 camera moved out of position? (one off)
+
+HA-198_20_27_06_262 camera moved (8:27pm!)
+
+Gap between HA-199_08_27_06_264 and HA-199_15_44_08_925 (battery)
+
+After battery failure, the camera was repositioned to capture late afternoon and evening images of tulip poplar. Not much to see. Battery died again in the early morning, so no further day-time images.
+
